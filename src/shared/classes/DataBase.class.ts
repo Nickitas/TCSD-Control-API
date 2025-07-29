@@ -1,18 +1,18 @@
 import Firebird from 'node-firebird';
-import { ConfigService } from 'src/config/config.service';
+import { DBConfig } from '../types/db-config.interface';
 
 export class DataBase {
     private readonly options: Firebird.Options;
 
-    constructor(private readonly config: ConfigService) {
+    constructor(private readonly db: DBConfig) {
         this.options = {
-            host: this.config.host,
-            port: this.config.port,
-            database: this.config.database,
-            user: this.config.user,
-            password: this.config.password,
-            lowercase_keys: this.config.lowercase_keys,
-        }
+            host: this.db.host,
+            port: this.db.port,
+            database: this.db.database,
+            user: this.db.user,
+            password: this.db.password,
+            lowercase_keys: this.db.lowercase_keys
+        };
     }
 
     connection = (cb: (db: Firebird.Database, err: any) => void) => {

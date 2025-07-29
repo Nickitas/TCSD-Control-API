@@ -1,21 +1,45 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService as NestJsConfigService } from '@nestjs/config';
+import { DBConfig } from 'src/shared/types/db-config.interface';
+
 
 @Injectable()
 export class ConfigService {
-    readonly host: string;
-    readonly port: number;
-    readonly database: string;
-    readonly user: string;
-    readonly password: string;
-    readonly lowercase_keys: boolean;
 
-    constructor (private readonly nestJsConfigService: NestJsConfigService) {
-        this.host = this.nestJsConfigService.getOrThrow<string>('DB_HOST');
-        this.port = +this.nestJsConfigService.getOrThrow<number>('DB_PORT');
-        this.database = this.nestJsConfigService.getOrThrow<string>('DB_DATABASE');
-        this.user = this.nestJsConfigService.getOrThrow<string>('DB_USER');
-        this.password = this.nestJsConfigService.getOrThrow<string>('DB_PASSWORD');
-        this.lowercase_keys = this.nestJsConfigService.getOrThrow<boolean>('DB_LOWERCASE_KEYS', { infer: true });
+    readonly dbMap: Array<DBConfig>;
+
+    constructor(private readonly nestJsConfigService: NestJsConfigService) {
+
+        this.dbMap = [
+            {
+                host: this.nestJsConfigService.getOrThrow('DB_MAIN_HOST'),
+                port: this.nestJsConfigService.getOrThrow('DB_MAIN_PORT'),
+                database: this.nestJsConfigService.getOrThrow('DB_MAIN_DATABASE'),
+                user: this.nestJsConfigService.getOrThrow('DB_MAIN_USER'),
+                password: this.nestJsConfigService.getOrThrow('DB_MAIN_PASSWORD'),
+                lowercase_keys: this.nestJsConfigService.getOrThrow('DB_MAIN_LOWERCASE_KEYS'),
+            },
+            {
+                host: this.nestJsConfigService.getOrThrow('DB_DORM1_HOST'),
+                port: this.nestJsConfigService.getOrThrow('DB_DORM1_PORT'),
+                database: this.nestJsConfigService.getOrThrow('DB_DORM1_DATABASE'),
+                user: this.nestJsConfigService.getOrThrow('DB_DORM1_USER'),
+                password: this.nestJsConfigService.getOrThrow('DB_DORM1_PASSWORD'),
+                lowercase_keys: this.nestJsConfigService.getOrThrow('DB_DORM1_LOWERCASE_KEYS'),
+            },
+            {
+                host: this.nestJsConfigService.getOrThrow('DB_DORM2_HOST'),
+                port: this.nestJsConfigService.getOrThrow('DB_DORM2_PORT'),
+                database: this.nestJsConfigService.getOrThrow('DB_DORM2_DATABASE'),
+                user: this.nestJsConfigService.getOrThrow('DB_DORM2_USER'),
+                password: this.nestJsConfigService.getOrThrow('DB_DORM2_PASSWORD'),
+                lowercase_keys: this.nestJsConfigService.getOrThrow('DB_DORM2_LOWERCASE_KEYS'),
+            },
+        ]
+
+    }
+
+    getDbMap(): Array<DBConfig> {
+        return this.dbMap;
     }
 }
