@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://" width="120" alt="Control Logo" />
+  <img src="https://github.com/Nickitas/TCSD-Control-API/assets\prew.webp" width="120" alt="Control Logo" />
 </p>
 
 <p align="center">The API for process management in the department of technical control systems of the enterprise.
@@ -61,4 +61,4 @@ $ npm run test:cov
 
 ## License
 
-Control is [MIT licensed](https://github.com/Nickitas/TCSD-Control-API).
+Control is [MIT licensed](https://github.com/Nickitas/TCSD-Control-API?tab=License-1-ov-file).
