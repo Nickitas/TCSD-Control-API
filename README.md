@@ -3,11 +3,11 @@
 The API for process management in the department of technical control systems of the enterprise.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Nickitas/TCSD-Control-API/refs/heads/main/assets/preview.webp" width="100%" alt="Control Logo" />
+  <img src="https://raw.githubusercontent.com/Nickitas/TCSD-Control-API/refs/heads/main/assets/preview.webp" width="640" alt="Control preview" />
 </p>
 
 <p align="center">
-<a href="#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
+<a href="#sponsor" target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
 </p>
 
 ## Description
