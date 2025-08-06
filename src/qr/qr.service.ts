@@ -1,148 +1,152 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { SchedulerRegistry } from '@nestjs/schedule';
-import { FbDatabaseService } from 'src/fb-database/fb-database.service';
-import { Personnel } from '@/fb-database/types/personnel.interface';
+import { QrGenerationResponseDto } from './dtos/qr.dto';
 import { bitCount } from './helpers/bit-count.helper';
-import { UserResponseDto } from './dtos/qr.dto';
+import { Personnel } from '@/fb-database/types/personnel.interface';
+import { FbDatabaseService } from '@/fb-database/fb-database.service';
 
 @Injectable()
 export class QrService {
-    private readonly logger = new Logger(QrService.name);
-    private scheduledTimeouts: Record<string, NodeJS.Timeout> = {};
+  private readonly logger = new Logger(QrService.name);
+  private scheduledTimeouts: Record<string, NodeJS.Timeout> = {};
 
-    constructor(
-        private readonly connectionService: FbDatabaseService,
-        private readonly schedulerRegistry: SchedulerRegistry,
-    ) { }
+  constructor(private readonly connectionService: FbDatabaseService) {}
 
-    /**
-     * Находит пользователя по UUID (GPWP)
-     */
-    async findUUID(uuid: string): Promise<Personnel | null> {
-        const results = await this.connectionService.withConnection<Personnel | null>(
-            async (db) => {
-                return new Promise<Personnel | null>((resolve) => {
-                    db.query(
-                        `SELECT PERS_ID FROM PERSONNEL WHERE TABELNOMER= ?`,
-                        [`${uuid}`],
-                        (err, result) => {
-                            console.log(`result >>>>>>>>>>>>>>>`, result)
-                            if (err) {
-                                console.error('Query error:', err);
-                                resolve(null);
-                                return;
-                            }
-                            resolve(result[0] || null);
-                        }
-                    );
-                });
-            }
-        );
-        return results.find(r => r !== null) ?? null;
+  // ==============================================
+  // 1. Приватные вспомогательные методы
+  // ==============================================
+  private clearScheduledTimeout(uuid: string): void {
+    if (this.scheduledTimeouts[uuid]) {
+      clearTimeout(this.scheduledTimeouts[uuid]);
+      delete this.scheduledTimeouts[uuid];
+    }
+  }
+
+  // ==============================================
+  // 2. Базовые операции с базой данных
+  // ==============================================
+  /**
+   * Находит пользователя по UUID (GPWP)
+   */
+  async findUserByUUID(uuid: string): Promise<Personnel | null> {
+    return this.connectionService
+      .withConnection<Personnel | null>(async (db) => {
+        return new Promise<Personnel | null>((resolve) => {
+          db.query(
+            `SELECT PERS_ID FROM PERSONNEL WHERE GPWP = ?`,
+            [uuid],
+            (err, result) => {
+              if (err) {
+                this.logger.error('Query error:', err);
+                resolve(null);
+                return;
+              }
+              resolve(result[0] || null);
+            },
+          );
+        });
+      })
+      .then((results) => results.find((r) => r !== null) ?? null);
+  }
+
+  /**
+   * Обновляет ключ (KLUCH2) для пользователя с указанным UUID
+   */
+  async updateUserKey(uuid: string, key: string): Promise<boolean> {
+    return this.connectionService
+      .withConnection<boolean>(async (db) => {
+        return new Promise<boolean>((resolve) => {
+          db.query(
+            `UPDATE PERSONNEL SET KLUCH2 = ? WHERE GPWP = ?`,
+            [key, uuid],
+            (err) => {
+              if (err) {
+                this.logger.error('Update error:', err);
+                resolve(false);
+                return;
+              }
+              resolve(true);
+            },
+          );
+        });
+      })
+      .then((results) => results.some((r) => r === true));
+  }
+
+  // ==============================================
+  // 3. Методы работы с ключами
+  // ==============================================
+  /**
+   * Генерирует ключ на основе PERS_ID пользователя
+   */
+  generateKey(id: number): string {
+    const safeId = id & 0xffffffff;
+    const withParity = (safeId << 1) | bitCount(safeId) % 2;
+    return withParity.toString(16).padStart(12, '0').toUpperCase();
+  }
+
+  /**
+   * Устанавливает готовый ключ с автоматическим удалением через 5 минут
+   */
+  async setTemporaryKey(uuid: string, key: string): Promise<boolean> {
+    this.clearScheduledTimeout(uuid);
+    const updateResult = await this.updateUserKey(uuid, key);
+    if (!updateResult) return false;
+
+    this.scheduledTimeouts[uuid] = setTimeout(
+      async () => {
+        await this.updateUserKey(uuid, '');
+        delete this.scheduledTimeouts[uuid];
+      },
+      5 * 60 * 1000,
+    );
+
+    return true;
+  }
+
+  /**
+   * Создает ключ на основе PERS_ID и записывает с автоматическим удалением через 5 минут
+   */
+  async createAndScheduleKey(persId: number, uuid: string): Promise<string> {
+    const key = this.generateKey(persId);
+    await this.setTemporaryKey(uuid, key);
+    return key;
+  }
+
+  /**
+   * Удаляет ключ вручную
+   */
+  async clearKey(uuid: string): Promise<boolean> {
+    this.clearScheduledTimeout(uuid);
+    return this.updateUserKey(uuid, '');
+  }
+
+  // ==============================================
+  // 4. Публичные API-методы
+  // ==============================================
+  /**
+   * Генерирует QR-код для пользователя
+   */
+  async generateQr(uuid: string): Promise<QrGenerationResponseDto> {
+    const user = await this.findUserByUUID(uuid);
+    if (!user?.PERS_ID) {
+      return {
+        status: 404,
+        message: 'User not found',
+      };
     }
 
-    /**
-    * Обновляет ключ (KLUCH2) для пользователя с указанным UUID
-    */
-    async updateKey(uuid: string, key: string): Promise<boolean> {
-        const results = await this.connectionService.withConnection<boolean>(
-            async (db) => {
-                return new Promise<boolean>((resolve) => {
-                    db.query(
-                        `UPDATE PERSONNEL SET KLUCH2 = ? WHERE GPWP = ?`,
-                        [key, uuid],
-                        (err) => {
-                            if (err) {
-                                console.error('Update error:', err);
-                                resolve(false);
-                                return;
-                            }
-                            resolve(true);
-                        }
-                    );
-                });
-            }
-        );
-        return results.some(r => r === true);
-    }
+    const newKey = this.generateKey(user.PERS_ID);
+    const success = await this.setTemporaryKey(uuid, newKey);
 
-    /**
-    * Генерирует ключ на основе ID
-    */
-    genKey(id: number): string {
-        // Используем только младшие 32 бита
-        const safeId = id & 0xFFFFFFFF;
-        const withParity = (safeId << 1) | (bitCount(safeId) % 2);
-        return withParity.toString(16)
-            .padStart(12, '0')
-            .toUpperCase();
-    }
-
-    /**
-     * Генерирует QR-код для пользователя
-     */
-    async generateQr(uuid: string): Promise<UserResponseDto> {
-        const user = await this.findUUID(uuid);
-        if (!user?.PERS_ID) {
-            return {
-                status: 404,
-                message: 'User not found'
-            };
+    return success
+      ? {
+          status: 200,
+          message: 'QR generated successfully',
+          data: { key: user.PERS_ID },
         }
-
-        const persId = Math.floor(Math.random() * (1000 - 100 + 1)) + 100;
-        const newKey = this.genKey(persId);
-
-        const updateResult = await this.updateKey(uuid, newKey);
-        if (!updateResult) {
-            return {
-                status: 400,
-                message: 'Update failed'
-            };
-        }
-
-        // Отменяем предыдущий таймаут, если он был
-        if (this.scheduledTimeouts[uuid]) {
-            clearTimeout(this.scheduledTimeouts[uuid]);
-            delete this.scheduledTimeouts[uuid];
-        }
-
-        // Устанавливаем новый таймаут на 5 минут (300000 мс)
-        this.scheduledTimeouts[uuid] = setTimeout(async () => {
-            await this.updateKey(uuid, '');
-            delete this.scheduledTimeouts[uuid];
-        }, 5 * 60 * 1000); // 5 минут в миллисекундах
-
-        return {
-            status: 200,
-            message: 'QR generated successfully',
-            data: { key: persId }
+      : {
+          status: 400,
+          message: 'Update failed',
         };
-    }
-
-    /**
-     * Создает и записывает ключ во все БД с автоматическим удалением через 5 минут
-     */
-    async createAndScheduleKey(userId: number, uuid: string): Promise<string> {
-        const key = this.genKey(userId);
-
-        // Записываем ключ во все БД
-        const updateResult = await this.updateKey(uuid, key);
-
-        if (!updateResult) {
-            throw new Error('Failed to update key in databases');
-        }
-
-        // Устанавливаем таймер на удаление
-        if (this.scheduledTimeouts[uuid]) {
-            clearTimeout(this.scheduledTimeouts[uuid]);
-        }
-
-        this.scheduledTimeouts[uuid] = setTimeout(async () => {
-            await this.updateKey(uuid, '');
-            delete this.scheduledTimeouts[uuid];
-        }, 5 * 60 * 1000);
-
-        return key;
-    }
+  }
 }

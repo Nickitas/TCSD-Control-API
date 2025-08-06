@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { QrService } from './qr.service';
 import { QrController } from './qr.controller';
-import { DatabaseModule } from 'src/fb-database/fb-database.module';
+import { FbDatabaseModule } from 'src/fb-database/fb-database.module';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [FbDatabaseModule],
   providers: [QrService],
   controllers: [QrController],
 })

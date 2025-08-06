@@ -1,18 +1,19 @@
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { QrModule } from './qr/qr.module';
-import { DatabaseModule } from './fb-database/fb-database.module';
+import { FbDatabaseModule } from './fb-database/fb-database.module';
 import { ConfigModule } from './config/config.module';
 import { ConfigModule as NestJsConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
     QrModule,
-    DatabaseModule,
+    FbDatabaseModule,
     ConfigModule,
     ScheduleModule.forRoot(),
     NestJsConfigModule.forRoot({
-      isGlobal: true
-    })],
+      isGlobal: true,
+    }),
+  ],
 })
-export class AppModule { }
+export class AppModule {}

@@ -1,3 +1,3 @@
 export interface Personnel {
-    PERS_ID?: number;
+  PERS_ID?: number;
 }
