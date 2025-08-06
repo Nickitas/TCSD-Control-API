@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SchedulerRegistry } from '@nestjs/schedule';
-import { DatabaseService } from 'src/database/database.service';
-import { bitCount } from 'src/shared/helpers/bit-count.helper';
-import { Personnel } from 'src/shared/types/personnel.interface';
-import { UserResponseDto } from './dto/qr.dto';
+import { FbDatabaseService } from 'src/fb-database/fb-database.service';
+import { Personnel } from '@/fb-database/types/personnel.interface';
+import { bitCount } from './helpers/bit-count.helper';
+import { UserResponseDto } from './dtos/qr.dto';
 
 @Injectable()
 export class QrService {
@@ -11,7 +11,7 @@ export class QrService {
     private scheduledTimeouts: Record<string, NodeJS.Timeout> = {};
 
     constructor(
-        private readonly connectionService: DatabaseService,
+        private readonly connectionService: FbDatabaseService,
         private readonly schedulerRegistry: SchedulerRegistry,
     ) { }
 

@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { QrModule } from './qr/qr.module';
-import { DatabaseModule } from './database/database.module';
+import { DatabaseModule } from './fb-database/fb-database.module';
 import { ConfigModule } from './config/config.module';
 import { ConfigModule as NestJsConfigModule } from '@nestjs/config';
 

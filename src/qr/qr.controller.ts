@@ -1,7 +1,7 @@
 import { Controller, Get, Param, Post, Body, Delete } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags, ApiParam, ApiBody } from '@nestjs/swagger';
 import { QrService } from './qr.service';
-import { Personnel } from 'src/shared/types/personnel.interface';
+import { Personnel } from '@/fb-database/types/personnel.interface';
 
 @ApiTags('QR Code Management')
 @Controller('qr')

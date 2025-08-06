@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService as NestJsConfigService } from '@nestjs/config';
-import { DBConfig } from 'src/shared/types/db-config.interface';
+import { DBConfig } from '@/fb-database/types/config.interface';
 
 
 @Injectable()

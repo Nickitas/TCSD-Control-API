@@ -1,19 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import * as Firebird from 'node-firebird';
 import { ConfigService } from 'src/config/config.service';
-import { DataBase } from 'src/shared/classes/DataBase.class';
-import { DBConfig } from 'src/shared/types/db-config.interface';
+import { FirebirdDB } from './classes/firebird-db.class';
+import { FbDbConfig } from './types/config.interface';
 
 @Injectable()
-export class DatabaseService {
+export class FbDatabaseService {
     constructor(private readonly configService: ConfigService) {}
 
     async withConnection<T>(callback: (db: Firebird.Database) => Promise<T>): Promise<T[]> {
-        const dbMap: DBConfig[] = this.configService.getDbMap();
+        const dbMap: FbDbConfig[] = this.configService.getDbMap();
         const results: T[] = [];
 
         for (const dbConfig of dbMap) {
-            const db = new DataBase(dbConfig);
+            const db = new FirebirdDB(dbConfig);
 
             console.log('>>> Trying to connect to:', dbConfig.database);
 

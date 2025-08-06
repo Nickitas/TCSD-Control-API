@@ -1,10 +1,10 @@
 import * as Firebird from 'node-firebird';
-import { DBConfig } from '../types/db-config.interface';
+import { FbDbConfig } from '@/fb-database/types/config.interface';
 
-export class DataBase {
+export class FirebirdDB {
     private readonly options: Firebird.Options;
 
-    constructor(private readonly db: DBConfig) {
+    constructor(private readonly db: FbDbConfig) {
         this.options = {
             host: this.db.host,
             port: this.db.port,
