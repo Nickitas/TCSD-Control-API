@@ -1,8 +1,9 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/Nickitas/TCSD-Control-API/refs/heads/main/assets/preview.webp" width="120" alt="Control Logo" />
-</p>
+# Control
 
-<p align="center">The API for process management in the department of technical control systems of the enterprise.
+The API for process management in the department of technical control systems of the enterprise.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Nickitas/TCSD-Control-API/refs/heads/main/assets/preview.webp" width="100%" alt="Control Logo" />
 </p>
 
 <p align="center">
