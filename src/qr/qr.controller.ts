@@ -9,12 +9,45 @@ export class QrController {
     constructor(private readonly qrService: QrService) { }
 
     @Get(':uuid')
-    @ApiOperation({ summary: 'Generate QR code for user' })
+    @ApiOperation({ summary: 'Generate QR code for user (with 5-minute auto-delete)' })
     @ApiParam({ name: 'uuid', description: 'User UUID (GPWP)' })
     @ApiResponse({ status: 200, description: 'QR code generated successfully' })
     @ApiResponse({ status: 404, description: 'User not found' })
     async generateQr(@Param('uuid') uuid: string) {
         return this.qrService.generateQr(uuid);
+    }
+
+    @Post('create-key')
+    @ApiOperation({ summary: 'Create and schedule key with 5-minute auto-delete' })
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: {
+                userId: { type: 'number', description: 'User ID' },
+                uuid: { type: 'string', description: 'User UUID (GPWP)' }
+            },
+            required: ['userId', 'uuid']
+        }
+    })
+    @ApiResponse({ status: 200, description: 'Key created and scheduled for auto-delete' })
+    @ApiResponse({ status: 400, description: 'Failed to create key' })
+    async createAndScheduleKey(
+        @Body('userId') userId: number,
+        @Body('uuid') uuid: string
+    ) {
+        try {
+            const key = await this.qrService.createAndScheduleKey(userId, uuid);
+            return { 
+                status: 200, 
+                message: 'Key created and will auto-delete in 5 minutes',
+                key 
+            };
+        } catch (error) {
+            return { 
+                status: 400, 
+                message: error.message || 'Failed to create key' 
+            };
+        }
     }
 
     @Get('user/:uuid')
@@ -38,7 +71,7 @@ export class QrController {
     }
 
     @Post('key')
-    @ApiOperation({ summary: 'Update user key' })
+    @ApiOperation({ summary: 'Update user key (without auto-delete)' })
     @ApiBody({
         schema: {
             type: 'object',
@@ -46,6 +79,7 @@ export class QrController {
                 uuid: { type: 'string' },
                 key: { type: 'string' },
             },
+            required: ['uuid', 'key']
         },
     })
     @ApiResponse({ status: 200, description: 'Key updated successfully' })
@@ -62,7 +96,7 @@ export class QrController {
     }
 
     @Delete('key/:uuid')
-    @ApiOperation({ summary: 'Reset user key' })
+    @ApiOperation({ summary: 'Reset user key (manual delete)' })
     @ApiParam({ name: 'uuid', description: 'User UUID (GPWP)' })
     @ApiResponse({ status: 200, description: 'Key reset successfully' })
     @ApiResponse({ status: 400, description: 'Reset failed' })

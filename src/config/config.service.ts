@@ -20,23 +20,14 @@ export class ConfigService {
                 lowercase_keys: this.nestJsConfigService.getOrThrow('DB_MAIN_LOWERCASE_KEYS'),
             },
             {
-                host: this.nestJsConfigService.getOrThrow('DB_DORM1_HOST'),
-                port: this.nestJsConfigService.getOrThrow('DB_DORM1_PORT'),
-                database: this.nestJsConfigService.getOrThrow('DB_DORM1_DATABASE'),
-                user: this.nestJsConfigService.getOrThrow('DB_DORM1_USER'),
-                password: this.nestJsConfigService.getOrThrow('DB_DORM1_PASSWORD'),
-                lowercase_keys: this.nestJsConfigService.getOrThrow('DB_DORM1_LOWERCASE_KEYS'),
-            },
-            {
-                host: this.nestJsConfigService.getOrThrow('DB_DORM2_HOST'),
-                port: this.nestJsConfigService.getOrThrow('DB_DORM2_PORT'),
-                database: this.nestJsConfigService.getOrThrow('DB_DORM2_DATABASE'),
-                user: this.nestJsConfigService.getOrThrow('DB_DORM2_USER'),
-                password: this.nestJsConfigService.getOrThrow('DB_DORM2_PASSWORD'),
-                lowercase_keys: this.nestJsConfigService.getOrThrow('DB_DORM2_LOWERCASE_KEYS'),
+                host: this.nestJsConfigService.getOrThrow('DB_DORM4_HOST'),
+                port: this.nestJsConfigService.getOrThrow('DB_DORM4_PORT'),
+                database: this.nestJsConfigService.getOrThrow('DB_DORM4_DATABASE'),
+                user: this.nestJsConfigService.getOrThrow('DB_DORM4_USER'),
+                password: this.nestJsConfigService.getOrThrow('DB_DORM4_PASSWORD'),
+                lowercase_keys: this.nestJsConfigService.getOrThrow('DB_DORM4_LOWERCASE_KEYS'),
             },
         ]
-
     }
 
     getDbMap(): Array<DBConfig> {

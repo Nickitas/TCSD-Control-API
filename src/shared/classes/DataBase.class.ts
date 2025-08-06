@@ -1,4 +1,4 @@
-import Firebird from 'node-firebird';
+import * as Firebird from 'node-firebird';
 import { DBConfig } from '../types/db-config.interface';
 
 export class DataBase {
@@ -16,10 +16,12 @@ export class DataBase {
     }
 
     connection = (cb: (db: Firebird.Database, err: any) => void) => {
-        Firebird.attach(this.options, function (err, db) {
-            if (err) throw err;
-
-            cb(db, err);
-        })
+        Firebird.attach(this.options, (err, db) => {
+        if (err) {
+            console.error(`ERROR >>> Firebird connection at [${this.options.host} ${this.options.database}]:`, err);
+        }
+        console.log(`>>> Firebird connected successfully at [${this.options.host} ${this.options.database}]!`);
+        cb(db, null);
+    });
     }
 }

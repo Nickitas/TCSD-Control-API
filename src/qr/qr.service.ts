@@ -5,11 +5,9 @@ import { bitCount } from 'src/shared/helpers/bit-count.helper';
 import { Personnel } from 'src/shared/types/personnel.interface';
 import { UserResponseDto } from './dto/qr.dto';
 
-
 @Injectable()
 export class QrService {
     private readonly logger = new Logger(QrService.name);
-    private activeTimeouts = new Map<string, NodeJS.Timeout>();
     private scheduledTimeouts: Record<string, NodeJS.Timeout> = {};
 
     constructor(
@@ -25,9 +23,10 @@ export class QrService {
             async (db) => {
                 return new Promise<Personnel | null>((resolve) => {
                     db.query(
-                        `SELECT PERS_ID FROM PERSONNEL WHERE GPWP = ?`,
-                        [uuid],
+                        `SELECT PERS_ID FROM PERSONNEL WHERE TABELNOMER= ?`,
+                        [`${uuid}`],
                         (err, result) => {
+                            console.log(`result >>>>>>>>>>>>>>>`, result)
                             if (err) {
                                 console.error('Query error:', err);
                                 resolve(null);
@@ -102,14 +101,17 @@ export class QrService {
             };
         }
 
+        // Отменяем предыдущий таймаут, если он был
         if (this.scheduledTimeouts[uuid]) {
             clearTimeout(this.scheduledTimeouts[uuid]);
+            delete this.scheduledTimeouts[uuid];
         }
 
+        // Устанавливаем новый таймаут на 5 минут (300000 мс)
         this.scheduledTimeouts[uuid] = setTimeout(async () => {
             await this.updateKey(uuid, '');
             delete this.scheduledTimeouts[uuid];
-        }, 60 * 1000);
+        }, 5 * 60 * 1000); // 5 минут в миллисекундах
 
         return {
             status: 200,
@@ -118,10 +120,8 @@ export class QrService {
         };
     }
 
-
-
     /**
-     * Создает и записывает ключ во все БД с автоматическим удалением через 3 минуты
+     * Создает и записывает ключ во все БД с автоматическим удалением через 5 минут
      */
     async createAndScheduleKey(userId: number, uuid: string): Promise<string> {
         const key = this.genKey(userId);
@@ -129,12 +129,19 @@ export class QrService {
         // Записываем ключ во все БД
         const updateResult = await this.updateKey(uuid, key);
 
-         if (!updateResult) {
+        if (!updateResult) {
             throw new Error('Failed to update key in databases');
         }
 
         // Устанавливаем таймер на удаление
-        // this.scheduleKeyRemoval(uuid, userId);
+        if (this.scheduledTimeouts[uuid]) {
+            clearTimeout(this.scheduledTimeouts[uuid]);
+        }
+
+        this.scheduledTimeouts[uuid] = setTimeout(async () => {
+            await this.updateKey(uuid, '');
+            delete this.scheduledTimeouts[uuid];
+        }, 5 * 60 * 1000);
 
         return key;
     }
