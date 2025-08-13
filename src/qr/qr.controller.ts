@@ -28,9 +28,35 @@ import {
 export class QrController {
   constructor(private readonly qrService: QrService) {}
 
+  @Get('generate/pers_id/:pers_id')
+  @ApiOperation({
+    summary: 'Generate QR code for user by pers id',
+    description:
+      'Generates a new QR code key based on user PersId and stores it for 5 minutes',
+  })
+  @ApiParam({ name: 'pers_id', description: 'User PersId' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'QR code generated successfully',
+    type: QrGenerationResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'User not found',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Failed to update key',
+  })
+  async generateQrById(
+    @Param('pers_id') pers_id: string,
+  ): Promise<QrGenerationResponseDto> {
+    return this.qrService.generateQrByPersId(pers_id);
+  }
+
   @Get('generate/:uuid')
   @ApiOperation({
-    summary: 'Generate QR code for user',
+    summary: 'Generate QR code for user by uuid',
     description:
       'Generates a new QR code key based on user UUID and stores it for 5 minutes',
   })
@@ -57,7 +83,7 @@ export class QrController {
   @Post('create-key')
   @ApiOperation({
     summary: 'Create and schedule QR key',
-    description: 'Creates a QR key from PERS_ID and stores it for 5 minutes',
+    description: 'Creates a QR key from pers_id and stores it for 5 minutes',
   })
   @ApiBody({ type: CreateKeyRequestDto })
   @ApiResponse({
@@ -115,9 +141,9 @@ export class QrController {
 
   @Post('generate-key')
   @ApiOperation({
-    summary: 'Generate QR key from PERS_ID',
+    summary: 'Generate QR key from pers_id',
     description:
-      'Generates a QR key string from provided PERS_ID without saving it',
+      'Generates a QR key string from provided pers_id without saving it',
   })
   @ApiBody({ type: GenerateKeyRequestDto })
   @ApiResponse({

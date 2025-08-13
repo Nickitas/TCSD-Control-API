@@ -32,8 +32,32 @@ export class QrService {
       .withConnection<Personnel | null>(async (db) => {
         return new Promise<Personnel | null>((resolve) => {
           db.query(
-            `SELECT PERS_ID FROM PERSONNEL WHERE GPWP = ?`,
-            [uuid],
+            `SELECT pers_id FROM PERSONNEL WHERE GPWP=?`,
+            [`${uuid}`],
+            (err, result) => {
+              if (err) {
+                this.logger.error('Query error:', err);
+                resolve(null);
+                return;
+              }
+              resolve(result[0] || null);
+            },
+          );
+        });
+      })
+      .then((results) => results.find((r) => r !== null) ?? null);
+  }
+
+  /**
+   * Находит пользователя по PersId
+   */
+  async findUserByPersId(pers_id: string): Promise<Personnel | null> {
+    return this.connectionService
+      .withConnection<Personnel | null>(async (db) => {
+        return new Promise<Personnel | null>((resolve) => {
+          db.query(
+            `SELECT pers_id FROM PERSONNEL WHERE pers_id=?`,
+            [`${pers_id}`],
             (err, result) => {
               if (err) {
                 this.logger.error('Query error:', err);
@@ -76,7 +100,7 @@ export class QrService {
   // 3. Методы работы с ключами
   // ==============================================
   /**
-   * Генерирует ключ на основе PERS_ID пользователя
+   * Генерирует ключ на основе pers_id пользователя
    */
   generateKey(id: number): string {
     const safeId = id & 0xffffffff;
@@ -104,7 +128,7 @@ export class QrService {
   }
 
   /**
-   * Создает ключ на основе PERS_ID и записывает с автоматическим удалением через 5 минут
+   * Создает ключ на основе pers_id и записывает с автоматическим удалением через 5 минут
    */
   async createAndScheduleKey(persId: number, uuid: string): Promise<string> {
     const key = this.generateKey(persId);
@@ -128,21 +152,45 @@ export class QrService {
    */
   async generateQr(uuid: string): Promise<QrGenerationResponseDto> {
     const user = await this.findUserByUUID(uuid);
-    if (!user?.PERS_ID) {
+    if (!user?.pers_id) {
       return {
         status: 404,
         message: 'User not found',
       };
     }
 
-    const newKey = this.generateKey(user.PERS_ID);
+    const newKey = this.generateKey(user.pers_id);
     const success = await this.setTemporaryKey(uuid, newKey);
 
     return success
       ? {
           status: 200,
           message: 'QR generated successfully',
-          data: { key: user.PERS_ID },
+          data: { key: user.pers_id },
+        }
+      : {
+          status: 400,
+          message: 'Update failed',
+        };
+  }
+
+  async generateQrByPersId(pers_id: string): Promise<QrGenerationResponseDto> {
+    const user = await this.findUserByPersId(pers_id);
+    if (!user?.pers_id) {
+      return {
+        status: 404,
+        message: 'User not found',
+      };
+    }
+
+    const newKey = this.generateKey(user.pers_id);
+    const success = await this.setTemporaryKey(pers_id, newKey);
+
+    return success
+      ? {
+          status: 200,
+          message: 'QR generated successfully',
+          data: { key: user.pers_id },
         }
       : {
           status: 400,

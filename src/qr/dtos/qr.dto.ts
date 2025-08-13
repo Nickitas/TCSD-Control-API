@@ -13,8 +13,8 @@ export class QrGenerationResponseDto {
 }
 
 export class PersonnelDto {
-  @ApiProperty({ description: 'User PERS_ID', example: 12345 })
-  PERS_ID: number;
+  @ApiProperty({ description: 'User pers_id', example: 12345 })
+  pers_id: number;
 
   @ApiProperty({
     description: 'User UUID (GPWP)',
@@ -33,7 +33,7 @@ export class PersonnelDto {
 
 // Requests
 export class CreateKeyRequestDto {
-  @ApiProperty({ description: 'User PERS_ID', example: 12345 })
+  @ApiProperty({ description: 'User pers_id', example: 12345 })
   persId: number;
 
   @ApiProperty({
@@ -45,7 +45,7 @@ export class CreateKeyRequestDto {
 
 export class GenerateKeyRequestDto {
   @ApiProperty({
-    description: 'User PERS_ID to generate key from',
+    description: 'User pers_id to generate key from',
     example: 12345,
     required: true,
   })
