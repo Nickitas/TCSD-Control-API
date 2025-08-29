@@ -33,8 +33,8 @@ export class PersonnelDto {
 
 // Requests
 export class CreateKeyRequestDto {
-  @ApiProperty({ description: 'User pers_id', example: 12345 })
-  persId: number;
+  @ApiProperty({ description: 'User tabelnomer', example: 2224674 })
+  tabelnomer: string;
 
   @ApiProperty({
     description: 'User UUID (GPWP)',
@@ -45,9 +45,9 @@ export class CreateKeyRequestDto {
 
 export class GenerateKeyRequestDto {
   @ApiProperty({
-    description: 'User pers_id to generate key from',
+    description: 'User tabelnomer to generate key from',
     example: 12345,
     required: true,
   })
-  persId: number;
+  tabelnomer: string;
 }

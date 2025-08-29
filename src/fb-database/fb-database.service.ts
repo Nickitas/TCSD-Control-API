@@ -17,6 +17,7 @@ export class FbDatabaseService {
     for (const dbConfig of dbMap) {
       const db = new FirebirdDB(dbConfig);
 
+      console.log('\n\n=============')
       console.log('>>> Trying to connect to:', dbConfig.database);
 
       try {

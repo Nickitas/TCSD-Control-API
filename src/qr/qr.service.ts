@@ -32,7 +32,8 @@ export class QrService {
       .withConnection<Personnel | null>(async (db) => {
         return new Promise<Personnel | null>((resolve) => {
           db.query(
-            `SELECT pers_id FROM PERSONNEL WHERE GPWP=?`,
+            // `SELECT tabelnomer FROM PERSONNEL WHERE GPWP = ?`,
+            `SELECT tabelnomer FROM PERSONNEL WHERE tabelnomer = ?`,
             [`${uuid}`],
             (err, result) => {
               if (err) {
@@ -48,16 +49,13 @@ export class QrService {
       .then((results) => results.find((r) => r !== null) ?? null);
   }
 
-  /**
-   * Находит пользователя по PersId
-   */
-  async findUserByPersId(pers_id: string): Promise<Personnel | null> {
+  async findUserByTabelnomer(tabelnomer: string): Promise<Personnel | null> {
     return this.connectionService
       .withConnection<Personnel | null>(async (db) => {
         return new Promise<Personnel | null>((resolve) => {
           db.query(
-            `SELECT pers_id FROM PERSONNEL WHERE pers_id=?`,
-            [`${pers_id}`],
+            `SELECT tabelnomer FROM PERSONNEL WHERE tabelnomer = ?`,
+            [`${tabelnomer}`],
             (err, result) => {
               if (err) {
                 this.logger.error('Query error:', err);
@@ -75,13 +73,13 @@ export class QrService {
   /**
    * Обновляет ключ (KLUCH2) для пользователя с указанным UUID
    */
-  async updateUserKey(uuid: string, key: string): Promise<boolean> {
+  async updateUserKey(tabelnomer: string, key: string): Promise<boolean> {
     return this.connectionService
       .withConnection<boolean>(async (db) => {
         return new Promise<boolean>((resolve) => {
           db.query(
-            `UPDATE PERSONNEL SET KLUCH2 = ? WHERE GPWP = ?`,
-            [key, uuid],
+            `UPDATE PERSONNEL SET KLUCH2 = ? WHERE tabelnomer = ?`,
+            [key, tabelnomer],
             (err) => {
               if (err) {
                 this.logger.error('Update error:', err);
@@ -102,8 +100,8 @@ export class QrService {
   /**
    * Генерирует ключ на основе pers_id пользователя
    */
-  generateKey(id: number): string {
-    const safeId = id & 0xffffffff;
+  generateKey(tabelnomer: string): string {
+    const safeId = +tabelnomer & 0xffffffff;
     const withParity = (safeId << 1) | bitCount(safeId) % 2;
     return withParity.toString(16).padStart(12, '0').toUpperCase();
   }
@@ -128,10 +126,10 @@ export class QrService {
   }
 
   /**
-   * Создает ключ на основе pers_id и записывает с автоматическим удалением через 5 минут
+   * Создает ключ на основе tablenomer и записывает с автоматическим удалением через 5 минут
    */
-  async createAndScheduleKey(persId: number, uuid: string): Promise<string> {
-    const key = this.generateKey(persId);
+  async createAndScheduleKey(tabelnomer: string, uuid: string): Promise<string> {
+    const key = this.generateKey(tabelnomer);
     await this.setTemporaryKey(uuid, key);
     return key;
   }
@@ -144,23 +142,34 @@ export class QrService {
     return this.updateUserKey(uuid, '');
   }
 
+
+
   // ==============================================
-  // 4. Публичные API-методы
+  // Публичные API-методы
   // ==============================================
   /**
    * Генерирует QR-код для пользователя
    */
-  async generateQr(uuid: string): Promise<QrGenerationResponseDto> {
+  async generateQrByUUID(uuid: string): Promise<QrGenerationResponseDto> {
     const user = await this.findUserByUUID(uuid);
-    if (!user?.pers_id) {
+
+    console.log(`UUID >>>> ${uuid}`);
+    console.log(`PERSON >>>> ${JSON.stringify(user)}`);
+
+    if (!user) {
       return {
         status: 404,
         message: 'User not found',
       };
     }
 
-    const newKey = this.generateKey(user.pers_id);
+    const newKey = this.generateKey(user?.tabelnomer || '');
+
+    console.log(`NEW KEY >>>> ${newKey}`);
+
     const success = await this.setTemporaryKey(uuid, newKey);
+
+    console.log(`SET KEY >>>> ${success}`); 
 
     return success
       ? {
@@ -174,17 +183,28 @@ export class QrService {
         };
   }
 
-  async generateQrByPersId(pers_id: string): Promise<QrGenerationResponseDto> {
-    const user = await this.findUserByPersId(pers_id);
-    if (!user?.pers_id) {
+
+
+  async generateQrByTabelnomer(tabelnomer: string): Promise<QrGenerationResponseDto> {
+    const user = await this.findUserByTabelnomer(tabelnomer);
+
+    console.log(`TABELNOMER >>>> ${tabelnomer}`);
+    console.log(`PERSON >>>> ${JSON.stringify(user)}`);
+
+    if (!user) {
       return {
         status: 404,
         message: 'User not found',
       };
     }
 
-    const newKey = this.generateKey(user.pers_id);
-    const success = await this.setTemporaryKey(pers_id, newKey);
+    const newKey = this.generateKey(user?.tabelnomer || '');
+
+    console.log(`NEW KEY >>>> ${newKey}`);
+
+    const success = await this.setTemporaryKey(tabelnomer, newKey);
+
+    console.log(`SET KEY >>>> ${success}`); 
 
     return success
       ? {
