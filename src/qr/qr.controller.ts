@@ -2,59 +2,25 @@ import {
   Controller,
   Get,
   Param,
-  Post,
-  Delete,
   HttpStatus,
-  Body,
 } from '@nestjs/common';
 import {
   ApiOperation,
   ApiResponse,
   ApiTags,
   ApiParam,
-  ApiBody,
 } from '@nestjs/swagger';
-import { Personnel } from '@/fb-database/types/personnel.interface';
 import { QrService } from './qr.service';
 import {
-  CreateKeyRequestDto,
-  GenerateKeyRequestDto,
-  PersonnelDto,
   QrGenerationResponseDto,
 } from './dtos/qr.dto';
 
 @ApiTags('QR Code Management')
 @Controller('qr')
 export class QrController {
-  constructor(private readonly qrService: QrService) {}
+  constructor(private readonly qrService: QrService) { }
 
-  @Get('generate/pers_id/:pers_id')
-  @ApiOperation({
-    summary: 'Generate QR code for user by pers id',
-    description:
-      'Generates a new QR code key based on user PersId and stores it for 5 minutes',
-  })
-  @ApiParam({ name: 'pers_id', description: 'User PersId' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'QR code generated successfully',
-    type: QrGenerationResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'User not found',
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Failed to update key',
-  })
-  async generateQrById(
-    @Param('pers_id') pers_id: string,
-  ): Promise<QrGenerationResponseDto> {
-    return this.qrService.generateQrByPersId(pers_id);
-  }
-
-  @Get('generate/:uuid')
+  @Get('staff/generate/:uuid')
   @ApiOperation({
     summary: 'Generate QR code for user by uuid',
     description:
@@ -74,87 +40,36 @@ export class QrController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Failed to update key',
   })
-  async generateQr(
+  async generateQrByUUID(
     @Param('uuid') uuid: string,
   ): Promise<QrGenerationResponseDto> {
-    return this.qrService.generateQr(uuid);
+    return this.qrService.generateQrByUUID(uuid);
   }
 
-  @Post('create-key')
-  @ApiOperation({
-    summary: 'Create and schedule QR key',
-    description: 'Creates a QR key from pers_id and stores it for 5 minutes',
-  })
-  @ApiBody({ type: CreateKeyRequestDto })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: 'Key created and scheduled successfully',
-    type: String,
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Failed to create key',
-  })
-  async createAndScheduleKey(
-    @Body() dto: CreateKeyRequestDto,
-  ): Promise<string> {
-    return this.qrService.createAndScheduleKey(dto.persId, dto.uuid);
-  }
 
-  @Delete('clear-key/:uuid')
+  @Get('stud/generate/:tabelnomer')
   @ApiOperation({
-    summary: 'Clear QR key manually',
-    description: 'Immediately removes the QR key before scheduled timeout',
+    summary: 'Generate QR code for user by tabnomer',
+    description:
+      'Generates a new QR code key based on user TABELNOMER and stores it for 5 minutes',
   })
-  @ApiParam({ name: 'uuid', description: 'User UUID (GPWP)' })
+  @ApiParam({ name: 'tabelnomer', description: 'User TABELNOMER' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Key cleared successfully',
-    type: Boolean,
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Failed to clear key',
-  })
-  async clearKey(@Param('uuid') uuid: string): Promise<boolean> {
-    return this.qrService.clearKey(uuid);
-  }
-
-  @Get('user/:uuid')
-  @ApiOperation({
-    summary: 'Get user by UUID',
-    description: 'Retrieves user information by UUID (GPWP)',
-  })
-  @ApiParam({ name: 'uuid', description: 'User UUID (GPWP)' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'User found',
-    type: PersonnelDto,
+    description: 'QR code generated successfully',
+    type: QrGenerationResponseDto,
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: 'User not found',
   })
-  async findUserByUUID(@Param('uuid') uuid: string): Promise<Personnel | null> {
-    return this.qrService.findUserByUUID(uuid);
-  }
-
-  @Post('generate-key')
-  @ApiOperation({
-    summary: 'Generate QR key from pers_id',
-    description:
-      'Generates a QR key string from provided pers_id without saving it',
-  })
-  @ApiBody({ type: GenerateKeyRequestDto })
   @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Key generated successfully',
-    type: String,
-    schema: {
-      example: '0000000001A2',
-    },
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Failed to update key',
   })
-  async generateKey(@Body() dto: GenerateKeyRequestDto): Promise<string> {
-    return this.qrService.generateKey(dto.persId);
+  async generateQrByTabelnomer(
+    @Param('tabelnomer') tabelnomer: string,
+  ): Promise<QrGenerationResponseDto> {
+    return this.qrService.generateQrByTabelnomer(tabelnomer);
   }
 }
