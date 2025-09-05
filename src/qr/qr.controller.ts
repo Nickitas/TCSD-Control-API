@@ -1,7 +1,7 @@
 import { Controller, Get, Param, HttpStatus } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags, ApiParam } from '@nestjs/swagger';
 import { QrService } from './qr.service';
-import { QrGenerationResponseDto } from './dtos/qr.dto';
+import { QrGenerationResponseDto } from './dto/qr-generation.dto';
 
 @ApiTags('QR Code Management')
 @Controller('qr')
@@ -10,11 +10,11 @@ export class QrController {
 
   @Get('staff/generate/:uuid')
   @ApiOperation({
-    summary: 'Generate QR code for user by uuid',
+    summary: 'Generate QR code for person by uuid',
     description:
-      'Generates a new QR code key based on user UUID and stores it for 5 minutes',
+      'Generates a new QR code key based on person UUID and stores it for 5 minutes',
   })
-  @ApiParam({ name: 'uuid', description: 'User UUID (GPWP)' })
+  @ApiParam({ name: 'uuid', description: 'Person UUID (GPWP)' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'QR code generated successfully',
@@ -36,11 +36,11 @@ export class QrController {
 
   @Get('stud/generate/:tabelnomer')
   @ApiOperation({
-    summary: 'Generate QR code for user by tabnomer',
+    summary: 'Generate QR code for person by tabnomer',
     description:
       'Generates a new QR code key based on user TABELNOMER and stores it for 5 minutes',
   })
-  @ApiParam({ name: 'tabelnomer', description: 'User TABELNOMER' })
+  @ApiParam({ name: 'tabelnomer', description: 'Person TABELNOMER' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'QR code generated successfully',

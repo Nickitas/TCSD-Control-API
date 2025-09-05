@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { QrGenerationResponseDto } from './dtos/qr.dto';
+import { QrGenerationResponseDto } from './dto/qr-generation.dto';
 import { Personnel } from '@/fb-database/types/personnel.interface';
 import { FbDatabaseService } from '@/fb-database/fb-database.service';
 import { getRandomNumber } from './helpers/gen-random-number';
