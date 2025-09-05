@@ -10,7 +10,7 @@ export class FbDatabaseService {
   private readonly CONNECTION_TIMEOUT = 10000;
   private readonly MAX_RETRIES = 2;
 
-  constructor(private readonly configService: ConfigService) { }
+  constructor(private readonly configService: ConfigService) {}
 
   async withConnection<T>(
     callback: (db: Firebird.Database) => Promise<T>,
@@ -24,12 +24,13 @@ export class FbDatabaseService {
 
       while (retries <= this.MAX_RETRIES && !connected) {
         try {
-          this.logger.log(`Connecting to database: ${dbConfig.host} (attempt ${retries + 1})`);
+          this.logger.log(
+            `Connecting to database: ${dbConfig.host} (attempt ${retries + 1})`,
+          );
 
           const result = await this.connectWithTimeout(dbConfig, callback);
           results.push(result);
           connected = true;
-
         } catch (error) {
           retries++;
 
@@ -45,7 +46,7 @@ export class FbDatabaseService {
             `Retry ${retries}/${this.MAX_RETRIES} for ${dbConfig.database}`,
           );
 
-          await new Promise(resolve => setTimeout(resolve, 1000 * retries));
+          await new Promise((resolve) => setTimeout(resolve, 1000 * retries));
         }
       }
     }
@@ -68,7 +69,11 @@ export class FbDatabaseService {
         clearTimeout(timeoutId);
 
         if (err) {
-          reject(new Error(`Connection failed for ${dbConfig.database}: ${err.message}`));
+          reject(
+            new Error(
+              `Connection failed for ${dbConfig.database}: ${err.message}`,
+            ),
+          );
           return;
         }
 
@@ -84,15 +89,22 @@ export class FbDatabaseService {
     });
   }
 
-  private safeDetach(connection: Firebird.Database, databaseName: string): void {
+  private safeDetach(
+    connection: Firebird.Database,
+    databaseName: string,
+  ): void {
     try {
       connection.detach((detachErr) => {
         if (detachErr) {
-          this.logger.warn(`Error detaching from ${databaseName}: ${detachErr.message}`);
+          this.logger.warn(
+            `Error detaching from ${databaseName}: ${detachErr.message}`,
+          );
         }
       });
     } catch (detachError) {
-      this.logger.warn(`Exception during detach from ${databaseName}: ${detachError.message}`);
+      this.logger.warn(
+        `Exception during detach from ${databaseName}: ${detachError.message}`,
+      );
     }
   }
 
@@ -108,7 +120,9 @@ export class FbDatabaseService {
         this.logger.log(`Success from database: ${dbConfig.database}`);
         return result;
       } catch (error) {
-        this.logger.warn(`Failed to execute on ${dbConfig.database}: ${error.message}`);
+        this.logger.warn(
+          `Failed to execute on ${dbConfig.database}: ${error.message}`,
+        );
       }
     }
 

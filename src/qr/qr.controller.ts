@@ -1,24 +1,12 @@
-import {
-  Controller,
-  Get,
-  Param,
-  HttpStatus,
-} from '@nestjs/common';
-import {
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-  ApiParam,
-} from '@nestjs/swagger';
+import { Controller, Get, Param, HttpStatus } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags, ApiParam } from '@nestjs/swagger';
 import { QrService } from './qr.service';
-import {
-  QrGenerationResponseDto,
-} from './dtos/qr.dto';
+import { QrGenerationResponseDto } from './dtos/qr.dto';
 
 @ApiTags('QR Code Management')
 @Controller('qr')
 export class QrController {
-  constructor(private readonly qrService: QrService) { }
+  constructor(private readonly qrService: QrService) {}
 
   @Get('staff/generate/:uuid')
   @ApiOperation({
@@ -45,7 +33,6 @@ export class QrController {
   ): Promise<QrGenerationResponseDto> {
     return this.qrService.generateQrByUUID(uuid);
   }
-
 
   @Get('stud/generate/:tabelnomer')
   @ApiOperation({

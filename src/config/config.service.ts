@@ -29,15 +29,21 @@ export class ConfigService {
         const dbConfig: FbDbConfig = {
           host: this.nestJsConfigService.getOrThrow(`${config.prefix}_HOST`),
           port: this.nestJsConfigService.getOrThrow(`${config.prefix}_PORT`),
-          database: this.nestJsConfigService.getOrThrow(`${config.prefix}_DATABASE`),
+          database: this.nestJsConfigService.getOrThrow(
+            `${config.prefix}_DATABASE`,
+          ),
           user: this.nestJsConfigService.getOrThrow(`${config.prefix}_USER`),
-          password: this.nestJsConfigService.getOrThrow(`${config.prefix}_PASSWORD`),
-          lowercase_keys: this.nestJsConfigService.get(`${config.prefix}_LOWERCASE_KEYS`, false),
+          password: this.nestJsConfigService.getOrThrow(
+            `${config.prefix}_PASSWORD`,
+          ),
+          lowercase_keys: this.nestJsConfigService.get(
+            `${config.prefix}_LOWERCASE_KEYS`,
+            false,
+          ),
         };
 
         validConfigs.push(dbConfig);
         this.logger.debug(`Configured database: ${config.name}`);
-
       } catch (error) {
         this.logger.warn(`Skipping ${config.name}: configuration incomplete`);
       }
@@ -55,6 +61,6 @@ export class ConfigService {
   }
 
   getActiveDatabases(): string[] {
-    return this.dbMap.map(db => db.database);
+    return this.dbMap.map((db) => db.database);
   }
 }
