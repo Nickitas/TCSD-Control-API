@@ -9,7 +9,6 @@ import {
   ApiResponse,
   ApiTags,
   ApiParam,
-  ApiBody,
 } from '@nestjs/swagger';
 import { QrService } from './qr.service';
 import {
@@ -156,4 +155,12 @@ export class QrController {
   // async generateKey(@Body() dto: GenerateKeyRequestDto): Promise<string> {
   //   return this.qrService.generateKey(dto.tabelnomer);
   // }
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Failed to update key',
+  })
+  async generateQrByTabelnomer(
+    @Param('tabelnomer') tabelnomer: string,
+  ): Promise<QrGenerationResponseDto> {
+    return this.qrService.generateQrByTabelnomer(tabelnomer);
+  }
 }

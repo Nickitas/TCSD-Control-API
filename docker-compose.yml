@@ -1,0 +1,14 @@
+services:
+  app:
+    build: .
+    container_name: tcsd_control_api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=production
