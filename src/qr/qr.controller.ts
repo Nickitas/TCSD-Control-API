@@ -2,10 +2,7 @@ import {
   Controller,
   Get,
   Param,
-  Post,
-  Delete,
   HttpStatus,
-  Body,
 } from '@nestjs/common';
 import {
   ApiOperation,
@@ -14,12 +11,8 @@ import {
   ApiParam,
   ApiBody,
 } from '@nestjs/swagger';
-import { Personnel } from '@/fb-database/types/personnel.interface';
 import { QrService } from './qr.service';
 import {
-  CreateKeyRequestDto,
-  GenerateKeyRequestDto,
-  PersonnelDto,
   QrGenerationResponseDto,
 } from './dtos/qr.dto';
 
@@ -55,7 +48,7 @@ export class QrController {
   }
 
 
-  @Get('stud/generate:tabelnomer')
+  @Get('stud/generate/:tabelnomer')
   @ApiOperation({
     summary: 'Generate QR code for user by tabnomer',
     description:
@@ -86,81 +79,81 @@ export class QrController {
 
 
 
-  @Post('create-key')
-  @ApiOperation({
-    summary: 'Create and schedule QR key',
-    description: 'Creates a QR key from pers_id and stores it for 5 minutes',
-  })
-  @ApiBody({ type: CreateKeyRequestDto })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: 'Key created and scheduled successfully',
-    type: String,
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Failed to create key',
-  })
-  async createAndScheduleKey(
-    @Body() dto: CreateKeyRequestDto,
-  ): Promise<string> {
-    return this.qrService.createAndScheduleKey(dto.tabelnomer, dto.uuid);
-  }
+  // @Post('create-key')
+  // @ApiOperation({
+  //   summary: 'Create and schedule QR key',
+  //   description: 'Creates a QR key from pers_id and stores it for 5 minutes',
+  // })
+  // @ApiBody({ type: CreateKeyRequestDto })
+  // @ApiResponse({
+  //   status: HttpStatus.CREATED,
+  //   description: 'Key created and scheduled successfully',
+  //   type: String,
+  // })
+  // @ApiResponse({
+  //   status: HttpStatus.BAD_REQUEST,
+  //   description: 'Failed to create key',
+  // })
+  // async createAndScheduleKey(
+  //   @Body() dto: CreateKeyRequestDto,
+  // ): Promise<string> {
+  //   return this.qrService.createAndScheduleKey(dto.tabelnomer, dto.uuid);
+  // }
 
-  @Delete('clear-key/:uuid')
-  @ApiOperation({
-    summary: 'Clear QR key manually',
-    description: 'Immediately removes the QR key before scheduled timeout',
-  })
-  @ApiParam({ name: 'uuid', description: 'User UUID (GPWP)' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Key cleared successfully',
-    type: Boolean,
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Failed to clear key',
-  })
-  async clearKey(@Param('uuid') uuid: string): Promise<boolean> {
-    return this.qrService.clearKey(uuid);
-  }
+  // @Delete('clear-key/:uuid')
+  // @ApiOperation({
+  //   summary: 'Clear QR key manually',
+  //   description: 'Immediately removes the QR key before scheduled timeout',
+  // })
+  // @ApiParam({ name: 'uuid', description: 'User UUID (GPWP)' })
+  // @ApiResponse({
+  //   status: HttpStatus.OK,
+  //   description: 'Key cleared successfully',
+  //   type: Boolean,
+  // })
+  // @ApiResponse({
+  //   status: HttpStatus.BAD_REQUEST,
+  //   description: 'Failed to clear key',
+  // })
+  // async clearKey(@Param('uuid') uuid: string): Promise<boolean> {
+  //   return this.qrService.clearKey(uuid);
+  // }
 
-  @Get('user/:uuid')
-  @ApiOperation({
-    summary: 'Get user by UUID',
-    description: 'Retrieves user information by UUID (GPWP)',
-  })
-  @ApiParam({ name: 'uuid', description: 'User UUID (GPWP)' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'User found',
-    type: PersonnelDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'User not found',
-  })
-  async findUserByUUID(@Param('uuid') uuid: string): Promise<Personnel | null> {
-    return this.qrService.findUserByUUID(uuid);
-  }
+  // @Get('user/:uuid')
+  // @ApiOperation({
+  //   summary: 'Get user by UUID',
+  //   description: 'Retrieves user information by UUID (GPWP)',
+  // })
+  // @ApiParam({ name: 'uuid', description: 'User UUID (GPWP)' })
+  // @ApiResponse({
+  //   status: HttpStatus.OK,
+  //   description: 'User found',
+  //   type: PersonnelDto,
+  // })
+  // @ApiResponse({
+  //   status: HttpStatus.NOT_FOUND,
+  //   description: 'User not found',
+  // })
+  // async findUserByUUID(@Param('uuid') uuid: string): Promise<Personnel | null> {
+  //   return this.qrService.findUserByUUID(uuid);
+  // }
 
-  @Post('generate-key')
-  @ApiOperation({
-    summary: 'Generate QR key from pers_id',
-    description:
-      'Generates a QR key string from provided pers_id without saving it',
-  })
-  @ApiBody({ type: GenerateKeyRequestDto })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Key generated successfully',
-    type: String,
-    schema: {
-      example: '0000000001A2',
-    },
-  })
-  async generateKey(@Body() dto: GenerateKeyRequestDto): Promise<string> {
-    return this.qrService.generateKey(dto.tabelnomer);
-  }
+  // @Post('generate-key')
+  // @ApiOperation({
+  //   summary: 'Generate QR key from pers_id',
+  //   description:
+  //     'Generates a QR key string from provided pers_id without saving it',
+  // })
+  // @ApiBody({ type: GenerateKeyRequestDto })
+  // @ApiResponse({
+  //   status: HttpStatus.OK,
+  //   description: 'Key generated successfully',
+  //   type: String,
+  //   schema: {
+  //     example: '0000000001A2',
+  //   },
+  // })
+  // async generateKey(@Body() dto: GenerateKeyRequestDto): Promise<string> {
+  //   return this.qrService.generateKey(dto.tabelnomer);
+  // }
 }
