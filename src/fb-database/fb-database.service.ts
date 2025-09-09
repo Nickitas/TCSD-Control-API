@@ -1,36 +1,41 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import * as Firebird from 'node-firebird';
 import { ConfigService } from 'src/config/config.service';
 import { FirebirdDB } from './classes/firebird-db.class';
 import { FbDbConfig } from './types/config.interface';
 
 @Injectable()
-export class FbDatabaseService {
+export class FbDatabaseService implements OnModuleInit {
   private readonly logger = new Logger(FbDatabaseService.name);
   private readonly CONNECTION_TIMEOUT = 10000;
   private readonly MAX_RETRIES = 2;
+  private dbMap: FbDbConfig[];
+  private connections: Map<string, Firebird.Database> = new Map();
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(private readonly configService: ConfigService) {
+    this.dbMap = this.configService.getDbMap();
+  }
 
-  async withConnection<T>(
-    callback: (db: Firebird.Database) => Promise<T>,
-  ): Promise<T[]> {
-    const dbMap: FbDbConfig[] = this.configService.getDbMap();
-    const results: T[] = [];
+  async onModuleInit() {
+    await this.initializeConnections();
+  }
 
-    for (const dbConfig of dbMap) {
+  private async initializeConnections(): Promise<void> {
+    for (const dbConfig of this.dbMap) {
       let retries = 0;
       let connected = false;
 
       while (retries <= this.MAX_RETRIES && !connected) {
         try {
           this.logger.log(
-            `Connecting to database: ${dbConfig.host} (attempt ${retries + 1})`,
+            `Connecting to database: ${dbConfig.database} (attempt ${retries + 1})`,
           );
 
-          const result = await this.connectWithTimeout(dbConfig, callback);
-          results.push(result);
+          const connection = await this.createConnection(dbConfig);
+          this.connections.set(dbConfig.database, connection);
           connected = true;
+
+          this.logger.log(`Successfully connected to: ${dbConfig.database}`);
         } catch (error) {
           retries++;
 
@@ -50,14 +55,9 @@ export class FbDatabaseService {
         }
       }
     }
-
-    return results;
   }
 
-  private async connectWithTimeout<T>(
-    dbConfig: FbDbConfig,
-    callback: (db: Firebird.Database) => Promise<T>,
-  ): Promise<T> {
+  private async createConnection(dbConfig: FbDbConfig): Promise<Firebird.Database> {
     return new Promise((resolve, reject) => {
       const timeoutId = setTimeout(() => {
         reject(new Error(`Connection timeout for ${dbConfig.database}`));
@@ -65,68 +65,95 @@ export class FbDatabaseService {
 
       const db = new FirebirdDB(dbConfig);
 
-      db.connection(async (connection, err) => {
+      db.connection((connection, err) => {
         clearTimeout(timeoutId);
 
         if (err) {
-          reject(
-            new Error(
-              `Connection failed for ${dbConfig.database}: ${err.message}`,
-            ),
-          );
+          reject(new Error(`Connection failed for ${dbConfig.database}: ${err.message}`));
           return;
         }
 
-        try {
-          const result = await callback(connection);
-          resolve(result);
-        } catch (callbackError) {
-          reject(callbackError);
-        } finally {
-          this.safeDetach(connection, dbConfig.database);
-        }
+        resolve(connection);
       });
     });
   }
 
-  private safeDetach(
-    connection: Firebird.Database,
-    databaseName: string,
-  ): void {
-    try {
-      connection.detach((detachErr) => {
-        if (detachErr) {
-          this.logger.warn(
-            `Error detaching from ${databaseName}: ${detachErr.message}`,
-          );
-        }
-      });
-    } catch (detachError) {
-      this.logger.warn(
-        `Exception during detach from ${databaseName}: ${detachError.message}`,
-      );
-    }
-  }
+  async withConnection<T>(
+    callback: (db: Firebird.Database, dbConfig: FbDbConfig) => Promise<T>,
+  ): Promise<T[]> {
+    const results: T[] = [];
 
-  /** Альтернативный метод: возвращает первый успешный результат из любой базы */
-  async withConnectionFirstSuccess<T>(
-    callback: (db: Firebird.Database) => Promise<T>,
-  ): Promise<T | null> {
-    const dbMap: FbDbConfig[] = this.configService.getDbMap();
-
-    for (const dbConfig of dbMap) {
+    for (const [databaseName, connection] of this.connections.entries()) {
       try {
-        const result = await this.connectWithTimeout(dbConfig, callback);
-        this.logger.log(`Success from database: ${dbConfig.database}`);
-        return result;
+        const dbConfig = this.dbMap.find(config => config.database === databaseName);
+        if (!dbConfig) continue;
+
+        const result = await callback(connection, dbConfig);
+        results.push(result);
       } catch (error) {
-        this.logger.warn(
-          `Failed to execute on ${dbConfig.database}: ${error.message}`,
+        this.logger.error(
+          `Failed to execute callback on ${databaseName}:`,
+          error.message,
         );
       }
     }
 
-    this.logger.error('All database connections failed');
+    return results;
+  }
+
+  /** Альтернативный метод: возвращает первый успешный результат из любой базы */
+  async withConnectionFirstSuccess<T>(
+    callback: (db: Firebird.Database, dbConfig: FbDbConfig) => Promise<T>,
+  ): Promise<T | null> {
+    for (const [databaseName, connection] of this.connections.entries()) {
+      try {
+        const dbConfig = this.dbMap.find(config => config.database === databaseName);
+        if (!dbConfig) continue;
+
+        const result = await callback(connection, dbConfig);
+        this.logger.log(`Success from database: ${databaseName}`);
+        return result;
+      } catch (error) {
+        this.logger.warn(
+          `Failed to execute on ${databaseName}: ${error.message}`,
+        );
+      }
+    }
+
+    this.logger.error('All database operations failed');
     return null;
+  }
+
+  async onModuleDestroy() {
+    await this.closeAllConnections();
+  }
+
+  private async closeAllConnections(): Promise<void> {
+    for (const [databaseName, connection] of this.connections.entries()) {
+      try {
+        connection.detach((detachErr) => {
+          if (detachErr) {
+            this.logger.warn(
+              `Error detaching from ${databaseName}: ${detachErr.message}`,
+            );
+          } else {
+            this.logger.log(`Successfully detached from ${databaseName}`);
+          }
+        });
+      } catch (detachError) {
+        this.logger.warn(
+          `Exception during detach from ${databaseName}: ${detachError.message}`,
+        );
+      }
+    }
+    this.connections.clear();
+  }
+
+  getConnection(databaseName: string): Firebird.Database | undefined {
+    return this.connections.get(databaseName);
+  }
+
+  getAllConnections(): Map<string, Firebird.Database> {
+    return new Map(this.connections);
   }
 }
