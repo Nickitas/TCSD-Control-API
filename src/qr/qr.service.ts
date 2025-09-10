@@ -3,6 +3,7 @@ import { QrGenerationResponseDto } from './dto/qr-generation.dto';
 import { Personnel } from '@/fb-database/types/personnel.interface';
 import { FbDatabaseService } from '@/fb-database/fb-database.service';
 import { getRandomNumber } from './helpers/gen-random-number';
+import { FbDbConfig } from '@/fb-database/types/config.interface';
 
 type UserIdentifier = 'uuid' | 'tabelnomer';
 
@@ -11,7 +12,7 @@ export class QrService {
   private readonly logger = new Logger(QrService.name);
   private scheduledTimeouts: Record<string, NodeJS.Timeout> = {};
 
-  constructor(private readonly connectionService: FbDatabaseService) {}
+  constructor(private readonly connectionService: FbDatabaseService) { }
 
   private clearScheduledTimeout(identifier: string): void {
     if (this.scheduledTimeouts[identifier]) {
@@ -29,24 +30,28 @@ export class QrService {
   private async findUserByIdentifier(
     type: UserIdentifier,
     value: string,
-  ): Promise<Personnel | null> {
+  ): Promise<{ user: Personnel | null; dbConfig: FbDbConfig | null }> {
     const field = type === 'uuid' ? 'GPWP' : 'tabelnomer';
     const query = `SELECT ${type === 'uuid' ? 'pers_id' : 'tabelnomer'} FROM PERSONNEL WHERE ${field} = ?`;
 
-    return this.connectionService
-      .withConnection<Personnel | null>(async (db) => {
-        return new Promise<Personnel | null>((resolve) => {
-          db.query(query, [value], (err, result) => {
-            if (err) {
-              this.logger.error('Query error:', err);
-              resolve(null);
-              return;
-            }
-            resolve(result[0] || null);
-          });
+    const results = await this.connectionService.withConnection<{
+      user: Personnel | null;
+      dbConfig: FbDbConfig;
+    }>(async (db, dbConfig) => {
+      return new Promise((resolve) => {
+        db.query(query, [value], (err, result) => {
+          if (err) {
+            this.logger.error('Query error:', err);
+            resolve({ user: null, dbConfig });
+            return;
+          }
+          resolve({ user: result[0] || null, dbConfig });
         });
-      })
-      .then((results) => results.find((r) => r !== null) ?? null);
+      });
+    });
+
+    const found = results.find((r) => r.user !== null);
+    return found || { user: null, dbConfig: null };
   }
 
   /**
@@ -60,24 +65,27 @@ export class QrService {
     type: UserIdentifier,
     identifier: string,
     key: string,
+    dbConfig: FbDbConfig,
   ): Promise<boolean> {
     const field = type === 'uuid' ? 'GPWP' : 'tabelnomer';
     const query = `UPDATE PERSONNEL SET KLUCH2 = ? WHERE ${field} = ?`;
 
-    return this.connectionService
-      .withConnection<boolean>(async (db) => {
-        return new Promise<boolean>((resolve) => {
-          db.query(query, [key, identifier], (err) => {
-            if (err) {
-              this.logger.error('Update error:', err);
-              resolve(false);
-              return;
-            }
-            resolve(true);
-          });
-        });
-      })
-      .then((results) => results.some((r) => r === true));
+    const connection = this.connectionService.getConnection(dbConfig.database);
+    if (!connection) {
+      this.logger.error(`No connection for database: ${dbConfig.database}`);
+      return false;
+    }
+
+    return new Promise<boolean>((resolve) => {
+      connection.query(query, [key, identifier], (err) => {
+        if (err) {
+          this.logger.error('Update error:', err);
+          resolve(false);
+          return;
+        }
+        resolve(true);
+      });
+    });
   }
 
   /**
@@ -93,20 +101,25 @@ export class QrService {
     key: string,
   ): Promise<boolean> {
     this.clearScheduledTimeout(identifier);
+
+    const { user, dbConfig } = await this.findUserByIdentifier(type, identifier);
+    if (!user || !dbConfig) return false;
+
     const updateResult = await this.updateUserKeyByIdentifier(
       type,
       identifier,
       key,
+      dbConfig,
     );
 
     if (!updateResult) return false;
 
     this.scheduledTimeouts[identifier] = setTimeout(
       async () => {
-        await this.updateUserKeyByIdentifier(type, identifier, '');
+        await this.updateUserKeyByIdentifier(type, identifier, '', dbConfig);
         delete this.scheduledTimeouts[identifier];
       },
-      5 * 60 * 1000,
+      30 * 60 * 1000,
     );
 
     return true;
@@ -148,7 +161,7 @@ export class QrService {
     this.logger.debug(`${type.toUpperCase()} >>>> ${identifier}`);
     this.logger.debug(`PERSON >>>> ${JSON.stringify(user)}`);
 
-    const userField = type === 'uuid' ? user?.pers_id : user?.tabelnomer;
+    const userField = type === 'uuid' ? user?.user?.pers_id : user?.user?.tabelnomer;
     if (!userField) {
       return {
         status: 404,
@@ -169,14 +182,14 @@ export class QrService {
 
     return success
       ? {
-          status: 200,
-          message: 'QR generated successfully',
-          data: { key: qrNum },
-        }
+        status: 200,
+        message: 'QR generated successfully',
+        data: { key: qrNum },
+      }
       : {
-          status: 400,
-          message: 'Update failed',
-        };
+        status: 400,
+        message: 'Update failed',
+      };
   }
 
   // ==============================================

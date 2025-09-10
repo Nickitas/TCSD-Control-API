@@ -1,10 +1,10 @@
 services:
   app:
     build: .
-    container_name: tcsd_control_api
+    container_name: "${CONTAINER_NAME}"
     restart: unless-stopped
     ports:
-      - "3333:3333"
+      - "${APP_PORT}:3333"
     env_file:
       - .env
     volumes:
