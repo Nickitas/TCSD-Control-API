@@ -21,6 +21,8 @@ export class QrService {
     }
   }
 
+  
+
   /**
    * Находит пользователя по идентификатору (GPWP / Tabelnomer)
    * @param type по какому полю искать в базе 'uuid' | 'tabelnomer'
